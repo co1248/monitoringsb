@@ -2,16 +2,19 @@ package com.co1248.monitoringsb.host;
 
 import java.util.List;
 
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.co1248.monitoringsb.dto.HostVO;
+import com.co1248.monitoringsb.dto.Host;
 
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-@Service
 public interface HostService {
-	/* private final HostRepository hostRepository; */
+	
+    public List<Host> getHostList();
 
-    public List<HostVO> getHostList();
+	public Host getHost(String id);
+
+	public void insertHost(Host vo);
+
+	public void updateHost(Host vo);
+
+	public void deleteHost(String id);
 }
