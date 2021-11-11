@@ -1,7 +1,13 @@
 package com.co1248.monitoringsb.controlloer;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.Timestamp;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,51 +16,79 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.co1248.monitoringsb.dto.Host;
+import com.co1248.monitoringsb.entity.Host;
 import com.co1248.monitoringsb.host.HostService;
 
 @RestController
 public class HostController {
-	private final HostService hostService = null;
+	@Autowired
+	private HostService hostService;
+
 	@GetMapping("/")
-	public String test () {
-        return "연결이 정상 작동 됩니다.";
-    }
+	public String test(HttpServletRequest request) {
+		return "index";
+	}
 
-	//조회
+	// 조회
 	@GetMapping("/host/{id}")
-	public Host getHost (@PathVariable(value = "id") String id) {
+	public Host getHost(@PathVariable(value = "id") String id) {
 		System.out.println("=====>getHost 실행");
-    	Host host = hostService.getHost(id);
-        return host;
-    }
-	
-	//리스트조회
+		Host host = hostService.getHost(id);
+		return host;
+	}
+
+	// 리스트조회
 	@GetMapping("/host/all")
-	public List<Host> getHostList () {
+	public List<Host> getHostList() {
 		System.out.println("=====>getHostList 실행");
-    	List<Host> hostlist = hostService.getHostList();
-        return hostlist;
-    }
+		List<Host> hostlist = hostService.getHostList();
+		return hostlist;
+	}
 
-	//등록
+	// 등록
 	@PostMapping("/add")
-	public void insertHost (@RequestBody Host vo) {
+	public String insertHost(@RequestBody Host vo) throws UnknownHostException {
 		System.out.println("=====>insertHost 실행");
-    	hostService.insertHost(vo);
-    }
+		if(hostService.getHostList().size() > 100) {
+			return "등록된 호스트가 100명이 넘어 새로운 등록이 불가합니다.";
+		} else {
+			//name, address값 받아 전달
+			InetAddress ia = InetAddress.getLocalHost();
+			vo.setName(ia.getHostName());
+			vo.setAddress(ia.getHostAddress());
+			hostService.insertHost(vo);
+			System.out.println("등록 완료");
+			return "/host/all";
+		}
+	}
 
-	//수정
+	// 수정
 	@PutMapping("/host/{id}")
-	public void updateHost (@RequestBody Host vo) {
+	public String updateHost(@RequestBody Host vo) throws UnknownHostException {
 		System.out.println("=====>updateHost 실행");
-    	hostService.updateHost(vo);
-    }
-	
-	//삭제
+		//id, name, address값 받아 전달
+		String id = vo.getId();
+		Host host = hostService.getHost(id);
+		vo.setId(host.getId());
+		InetAddress ia = InetAddress.getLocalHost();
+		vo.setName(ia.getHostName());
+		vo.setAddress(ia.getHostAddress());
+		//수정시간도 보내주기
+		Long datetime = System.currentTimeMillis();
+        Timestamp timestamp = new Timestamp(datetime);
+        System.out.println("Current Time Stamp: "+timestamp);
+		vo.setModDate(timestamp);
+		hostService.updateHost(vo);
+		System.out.println("수정 완료");
+		return "/host/all";
+	}
+
+	// 삭제
 	@DeleteMapping("/host/{id}")
-	public void deleteHost (@PathVariable(value = "id") String id) {
+	public String deleteHost(@PathVariable(value = "id") String id) {
 		System.out.println("=====>deleteHost 실행");
-    	hostService.deleteHost(id);
-    }
+		hostService.deleteHost(id);
+		System.out.println("삭제 완료");
+		return "/host/all";
+	}
 }
