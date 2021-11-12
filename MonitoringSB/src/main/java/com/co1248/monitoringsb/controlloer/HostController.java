@@ -1,5 +1,6 @@
 package com.co1248.monitoringsb.controlloer;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
@@ -49,10 +50,10 @@ public class HostController {
 	@PostMapping("/add")
 	public String insertHost(@RequestBody Host vo) throws UnknownHostException {
 		System.out.println("=====>insertHost 실행");
-		if(hostService.getHostList().size() > 100) {
+		if (hostService.getHostList().size() > 100) {
 			return "등록된 호스트가 100명이 넘어 새로운 등록이 불가합니다.";
 		} else {
-			//name, address값 받아 전달
+			// name, address값 받아 전달
 			InetAddress ia = InetAddress.getLocalHost();
 			vo.setName(ia.getHostName());
 			vo.setAddress(ia.getHostAddress());
@@ -66,17 +67,17 @@ public class HostController {
 	@PutMapping("/host/{id}")
 	public String updateHost(@RequestBody Host vo) throws UnknownHostException {
 		System.out.println("=====>updateHost 실행");
-		//id, name, address값 받아 전달
+		// id, name, address값 받아 전달
 		String id = vo.getId();
 		Host host = hostService.getHost(id);
 		vo.setId(host.getId());
 		InetAddress ia = InetAddress.getLocalHost();
 		vo.setName(ia.getHostName());
 		vo.setAddress(ia.getHostAddress());
-		//수정시간도 보내주기
+		// 수정시간도 보내주기
 		Long datetime = System.currentTimeMillis();
-        Timestamp timestamp = new Timestamp(datetime);
-        System.out.println("Current Time Stamp: "+timestamp);
+		Timestamp timestamp = new Timestamp(datetime);
+		System.out.println("Current Time Stamp: " + timestamp);
 		vo.setModDate(timestamp);
 		hostService.updateHost(vo);
 		System.out.println("수정 완료");
@@ -89,6 +90,35 @@ public class HostController {
 		System.out.println("=====>deleteHost 실행");
 		hostService.deleteHost(id);
 		System.out.println("삭제 완료");
+		return "/host/all";
+	}
+
+	// 모니터링
+	public String monitoring() throws IOException {
+		System.out.println("=====>monitoring 실행");
+		List<Host> hostlist = hostService.getHostList();
+		for (Host vo2 : hostlist) {
+			String id = vo2.getId();
+			String name = vo2.getName();
+			InetAddress iaddr = InetAddress.getByName(name);
+			boolean reachable = iaddr.isReachable(2000);
+			if (reachable) {
+				System.out.println(name + "alive!");
+				vo2.setId(id);
+				vo2.setAlive("Y");
+				Long datetime = System.currentTimeMillis();
+				Timestamp timestamp = new Timestamp(datetime);
+				vo2.setAliveDate(timestamp);
+				hostService.updateHost(vo2);
+				System.out.println("alive 수정 완료");
+			} else {
+				System.out.println(name + "dead..");
+				vo2.setId(id);
+				vo2.setAlive("N");
+				hostService.updateHost(vo2);
+				System.out.println("dead 수정 완료");
+			}
+		}
 		return "/host/all";
 	}
 }
